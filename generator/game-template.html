@@ -15,7 +15,7 @@
         .game-stats { display: flex; justify-content: space-between; font-size: 14px; color: #888; margin-bottom: 20px; }
         .mistakes { color: #e74c3c; }
         .word-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; max-width: 460px; margin: 0 auto 20px auto; }
-        .word-card { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 16px 8px; text-align: center; font-size: 14px; font-weight: 500; color: #333; cursor: pointer; transition: all 0.2s ease; width: 110px; height: 60px; display: flex; align-items: center; justify-content: center; user-select: none; word-wrap: break-word; hyphens: auto; }
+        .word-card { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 16px 8px; text-align: center; font-size: 14px; font-weight: 500; color: #333; cursor: pointer; transition: all 0.2s ease; width: 110px; height: 60px; display: flex; align-items: center; justify-content: center; user-select: none; word-wrap: break-word; hyphens: auto; overflow-wrap: break-word; word-break: break-word; line-height: 1.1; }
         .word-card:hover { background: #e9ecef; border-color: #dee2e6; }
         .word-card.selected { background: #333; color: white; border-color: #333; }
         .found-group-banner { grid-column: 1 / -1; background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 12px; text-align: center; cursor: default; transition: all 0.3s ease; margin-bottom: 4px; }
@@ -40,7 +40,7 @@
         @media (max-width: 480px) {
             .game-container { padding: 15px; }
             .word-grid { max-width: 320px; }
-            .word-card { padding: 12px 6px; font-size: 10px; width: 75px; height: 50px; }
+            .word-card { padding: 12px 6px; font-size: clamp(8px, 2.5vw, 10px); width: 75px; height: 50px; line-height: 1.0; }
             .game-title { font-size: 20px; }
             .found-group-banner { padding: 8px; }
             .banner-category { font-size: 12px; margin-bottom: 6px; }
@@ -132,7 +132,7 @@
                 remainingWords.forEach(word => {
                     const wordCard = document.createElement('div');
                     wordCard.className = 'word-card fade-in';
-                    wordCard.textContent = word;
+                    wordCard.innerHTML = this.addHyphens(word);
                     wordCard.dataset.word = word;
                     this.adjustFontSize(wordCard, word);
                     wordCard.addEventListener('click', () => this.toggleWord(word));
@@ -141,19 +141,40 @@
                 this.updateSelectedState();
             }
             adjustFontSize(wordCard, word) {
-                const maxFontSize = window.innerWidth <= 480 ? 12 : 14;
-                const minFontSize = window.innerWidth <= 480 ? 9 : 10;
+                const isMobile = window.innerWidth <= 480;
+                const maxFontSize = isMobile ? 10 : 14;
+                const minFontSize = isMobile ? 7 : 9;
+                
                 let fontSize = maxFontSize;
-                if (word.length <= 6) {
+                if (word.length <= 5) {
                     fontSize = maxFontSize;
-                } else if (word.length <= 8) {
+                } else if (word.length <= 7) {
                     fontSize = maxFontSize - 1;
-                } else if (word.length <= 10) {
+                } else if (word.length <= 9) {
                     fontSize = maxFontSize - 2;
+                } else if (word.length <= 11) {
+                    fontSize = maxFontSize - 3;
                 } else {
                     fontSize = minFontSize;
                 }
+                
                 wordCard.style.fontSize = fontSize + 'px';
+                wordCard.style.lineHeight = isMobile ? '1.0' : '1.1';
+            }
+            addHyphens(word) {
+                // Add soft hyphens for better breaking on long words
+                if (word.length <= 6) return word;
+                
+                // For words longer than 6 characters, add soft hyphens every 3-4 characters
+                let result = '';
+                for (let i = 0; i < word.length; i++) {
+                    result += word[i];
+                    // Add soft hyphen after every 3-4 characters, but not at the end
+                    if (i > 0 && (i + 1) % 4 === 0 && i < word.length - 1) {
+                        result += '&shy;';
+                    }
+                }
+                return result;
             }
             toggleWord(word) {
                 if (this.gameComplete) return;
