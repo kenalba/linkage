@@ -324,7 +324,7 @@ class PuzzleCreator {
         const url = URL.createObjectURL(blob);
         
         // Open in new tab
-        const newTab = window.open(url, '_blank');
+        window.open(url, '_blank');
         
         // Clean up the blob URL after a delay (tab should have loaded by then)
         setTimeout(() => {
