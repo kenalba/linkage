@@ -65,6 +65,7 @@ const copyTemplatePlugin = () => ({
 
 export default defineConfig({
   root: '.',
+  base: './',
   server: {
     port: 3000,
     open: '/puzzle-creator.html',
