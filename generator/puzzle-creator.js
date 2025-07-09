@@ -287,6 +287,12 @@ class PuzzleCreator {
 
         const filename = this.getCleanFilename(gameData.title);
 
+        // Clear any existing preview
+        const existingPreview = document.getElementById('previewContainer');
+        if (existingPreview) {
+            existingPreview.remove();
+        }
+
         try {
             const response = await fetch('/api/save-game', {
                 method: 'POST',
@@ -301,8 +307,11 @@ class PuzzleCreator {
 
             const result = await response.json();
             if (result.success) {
-                // Update UI to show preview link
-                this.showPreviewLink(result.filename);
+                // Open preview directly in new tab
+                window.open(`/output/${result.filename}`, '_blank');
+                
+                // Also show success message
+                this.showPreviewSuccess();
             } else {
                 alert('Failed to save game for preview: ' + result.error);
             }
@@ -328,7 +337,7 @@ class PuzzleCreator {
         URL.revokeObjectURL(url);
     }
 
-    showPreviewLink(filename) {
+    showPreviewSuccess() {
         const previewContainer = document.getElementById('previewContainer');
         if (!previewContainer) {
             // Create preview container if it doesn't exist
@@ -337,10 +346,7 @@ class PuzzleCreator {
             container.className = 'preview-container';
             container.innerHTML = `
                 <div class="preview-message">
-                    <strong>✅ Game saved successfully!</strong>
-                    <a href="../output/${filename}" target="_blank" class="preview-link">
-                        🎮 Preview Game
-                    </a>
+                    <strong>✅ Game saved and opened in new tab!</strong>
                 </div>
             `;
             
@@ -350,13 +356,18 @@ class PuzzleCreator {
             // Update existing preview container
             previewContainer.innerHTML = `
                 <div class="preview-message">
-                    <strong>✅ Game saved successfully!</strong>
-                    <a href="../output/${filename}" target="_blank" class="preview-link">
-                        🎮 Preview Game
-                    </a>
+                    <strong>✅ Game saved and opened in new tab!</strong>
                 </div>
             `;
         }
+
+        // Auto-hide the message after 3 seconds
+        setTimeout(() => {
+            const container = document.getElementById('previewContainer');
+            if (container) {
+                container.style.opacity = '0.5';
+            }
+        }, 3000);
     }
 
     showStep(stepNumber) {
@@ -455,3 +466,15 @@ function previewPuzzle() {
 function downloadPuzzle() {
     puzzleCreator.downloadPuzzle();
 }
+
+// Make functions globally available for ES modules
+window.selectMode = selectMode;
+window.switchInputMethod = switchInputMethod;
+window.backToStep1 = backToStep1;
+window.backToStep2 = backToStep2;
+window.createPuzzleFromManual = createPuzzleFromManual;
+window.createPuzzleFromJSON = createPuzzleFromJSON;
+window.downloadSampleJSON = downloadSampleJSON;
+window.copySampleJSON = copySampleJSON;
+window.previewPuzzle = previewPuzzle;
+window.downloadPuzzle = downloadPuzzle;
