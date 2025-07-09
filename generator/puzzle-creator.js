@@ -293,6 +293,7 @@ class PuzzleCreator {
             existingPreview.remove();
         }
 
+        // Try to save to server first (for dev environment)
         try {
             const response = await fetch('/api/save-game', {
                 method: 'POST',
@@ -305,19 +306,32 @@ class PuzzleCreator {
                 })
             });
 
-            const result = await response.json();
-            if (result.success) {
-                // Open preview directly in new tab
-                window.open(`/output/${result.filename}`, '_blank');
-                
-                // Also show success message
-                this.showPreviewSuccess();
-            } else {
-                alert('Failed to save game for preview: ' + result.error);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    // Dev environment - open from saved file
+                    window.open(`/output/${result.filename}`, '_blank');
+                    this.showPreviewSuccess();
+                    return;
+                }
             }
         } catch (error) {
-            alert('Failed to save game for preview: ' + error.message);
+            // Dev server not available, fall through to blob method
         }
+
+        // Production/deployed environment - use blob URL
+        const blob = new Blob([gameData.html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        
+        // Open in new tab
+        const newTab = window.open(url, '_blank');
+        
+        // Clean up the blob URL after a delay (tab should have loaded by then)
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 1000);
+        
+        this.showPreviewSuccess();
     }
 
     downloadPuzzle() {
