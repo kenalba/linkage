@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔗 Linkages Puzzle Creator</title>
+    <title>Linkages Puzzle Creator</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <link rel="stylesheet" href="./puzzle-creator.css">
 </head>
@@ -66,6 +66,46 @@
                         placeholder="e.g., 'Science Terms', 'Literature Quiz', 'Daily Linkages'"
                         value="Daily Linkages"
                     >
+                </div>
+
+                <div class="form-group">
+                    <label>Learning Record Store (LRS) Configuration (Optional):</label>
+                    <div class="lrs-config">
+                        <div class="lrs-field">
+                            <label for="lrsEndpoint">LRS Endpoint URL:</label>
+                            <input 
+                                type="url" 
+                                id="lrsEndpoint" 
+                                value="https://lrs.qa.ander.ai/xapi"
+                                title="The base URL of your LRS ending in /xapi"
+                            >
+                            <small class="field-help">Pre-filled with YetxAPI SQLLRS endpoint. Change if using a different LRS.</small>
+                        </div>
+                        <div class="lrs-field">
+                            <label for="lrsApiKey">API Key:</label>
+                            <input 
+                                type="password" 
+                                id="lrsApiKey" 
+                                placeholder="k68oJtSQisP253J"
+                                title="Your LRS API key"
+                            >
+                        </div>
+                        <div class="lrs-field">
+                            <label for="lrsApiSecret">API Secret:</label>
+                            <input 
+                                type="password" 
+                                id="lrsApiSecret" 
+                                placeholder="7IRrrXSCxVLypbLVurLWwPtAIotXYQJ6ZP235jvW"
+                                title="Your LRS API secret"
+                            >
+                            <small class="field-help">⚠️ <strong>Security Note:</strong> Both API key and secret will be embedded in the HTML file and visible to anyone who views the source. Only use for testing or internal use.</small>
+                        </div>
+                        <div class="lrs-help">
+                            <small>📊 <strong>What gets tracked:</strong> Incorrect guesses, correct category finds, game completion/failure<br>
+                            🔒 <strong>Privacy:</strong> Only game events are sent, no personal data<br>
+                            ⚠️ <strong>Leave empty to disable tracking</strong></small>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="input-method-tabs">

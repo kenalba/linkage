@@ -67,6 +67,174 @@
         </div>
     </div>
     <script>
+        class LRSService {
+            constructor() {
+                this.endpoint = '{{LRS_ENDPOINT}}' || null;
+                this.authToken = '{{LRS_AUTH_TOKEN}}' || null;
+                this.enabled = this.endpoint && this.authToken;
+                this.sessionId = this.generateSessionId();
+                this.gameStartTime = new Date().toISOString();
+            }
+
+            generateUUID() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+
+            generateSessionId() {
+                return this.generateUUID();
+            }
+
+            generateStatementId() {
+                return this.generateUUID();
+            }
+
+            async sendStatement(statement) {
+                if (!this.enabled) {
+                    console.log('LRS not configured, statement would be:', statement);
+                    return;
+                }
+
+                try {
+                    // Auto-detect auth format and prepare authorization header
+                    let authHeader = this.authToken;
+                    if (!authHeader.toLowerCase().startsWith('basic ') && !authHeader.toLowerCase().startsWith('bearer ')) {
+                        // Assume it's an API key and use Bearer auth
+                        authHeader = `Bearer ${authHeader}`;
+                    }
+
+                    const response = await fetch(this.endpoint + '/statements', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': authHeader,
+                            'X-Experience-API-Version': '1.0.3'
+                        },
+                        body: JSON.stringify(statement)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`LRS request failed: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('Failed to send LRS statement:', error);
+                }
+            }
+
+            createBaseStatement(verb, result = {}) {
+                return {
+                    id: this.generateStatementId(),
+                    timestamp: new Date().toISOString(),
+                    actor: {
+                        name: 'Anonymous User',
+                        mbox: 'mailto:anonymous@example.com'
+                    },
+                    verb: verb,
+                    object: {
+                        id: window.location.href,
+                        definition: {
+                            name: { 'en-US': document.title },
+                            type: 'http://adlnet.gov/expapi/activities/assessment'
+                        }
+                    },
+                    result: result,
+                    context: {
+                        registration: this.sessionId,
+                        extensions: {
+                            'http://id.tincanapi.com/extension/session-id': this.sessionId,
+                            'http://id.tincanapi.com/extension/game-start-time': this.gameStartTime
+                        }
+                    }
+                };
+            }
+
+            trackIncorrectGuess(selectedWords, mistakesRemaining) {
+                const statement = this.createBaseStatement(
+                    {
+                        id: 'http://adlnet.gov/expapi/verbs/answered',
+                        display: { 'en-US': 'answered' }
+                    },
+                    {
+                        success: false,
+                        completion: false,
+                        response: selectedWords.join(', '),
+                        extensions: {
+                            'http://id.tincanapi.com/extension/mistakes-remaining': mistakesRemaining,
+                            'http://id.tincanapi.com/extension/selected-words': selectedWords
+                        }
+                    }
+                );
+                this.sendStatement(statement);
+            }
+
+            trackCorrectGuess(category, words, groupsFound) {
+                const statement = this.createBaseStatement(
+                    {
+                        id: 'http://adlnet.gov/expapi/verbs/answered',
+                        display: { 'en-US': 'answered' }
+                    },
+                    {
+                        success: true,
+                        completion: false,
+                        response: words.join(', '),
+                        extensions: {
+                            'http://id.tincanapi.com/extension/category': category,
+                            'http://id.tincanapi.com/extension/groups-found': groupsFound,
+                            'http://id.tincanapi.com/extension/selected-words': words
+                        }
+                    }
+                );
+                this.sendStatement(statement);
+            }
+
+            trackGameCompleted(totalTime, mistakesUsed) {
+                const statement = this.createBaseStatement(
+                    {
+                        id: 'http://adlnet.gov/expapi/verbs/completed',
+                        display: { 'en-US': 'completed' }
+                    },
+                    {
+                        success: true,
+                        completion: true,
+                        duration: this.formatDuration(totalTime),
+                        extensions: {
+                            'http://id.tincanapi.com/extension/mistakes-used': mistakesUsed,
+                            'http://id.tincanapi.com/extension/total-time-seconds': Math.floor(totalTime / 1000)
+                        }
+                    }
+                );
+                this.sendStatement(statement);
+            }
+
+            trackGameFailed(totalTime, mistakesUsed) {
+                const statement = this.createBaseStatement(
+                    {
+                        id: 'http://adlnet.gov/expapi/verbs/failed',
+                        display: { 'en-US': 'failed' }
+                    },
+                    {
+                        success: false,
+                        completion: true,
+                        duration: this.formatDuration(totalTime),
+                        extensions: {
+                            'http://id.tincanapi.com/extension/mistakes-used': mistakesUsed,
+                            'http://id.tincanapi.com/extension/total-time-seconds': Math.floor(totalTime / 1000)
+                        }
+                    }
+                );
+                this.sendStatement(statement);
+            }
+
+            formatDuration(milliseconds) {
+                const seconds = Math.floor(milliseconds / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                return `PT${hours}H${minutes % 60}M${seconds % 60}S`;
+            }
+        }
+
         class ConnectionsGame {
             constructor() {
                 this.gameData = null;
@@ -75,6 +243,8 @@
                 this.mistakes = 4;
                 this.gameComplete = false;
                 this.shuffledWords = [];
+                this.lrsService = new LRSService();
+                this.gameStartTime = Date.now();
                 this.initializeElements();
                 this.setupEventListeners();
                 this.loadGame();
@@ -222,18 +392,22 @@
                 );
                 if (correctGroup) {
                     this.foundGroups.push(correctGroup);
+                    this.lrsService.trackCorrectGuess(correctGroup.category, correctGroup.words, this.foundGroups.length);
                     this.selectedWords = [];
                     if (this.foundGroups.length === 4) {
                         this.gameComplete = true;
                         this.showMessage('🎉 Congratulations! You solved the puzzle!', 'success');
+                        this.lrsService.trackGameCompleted(Date.now() - this.gameStartTime, 4 - this.mistakes);
                     }
                 } else {
                     this.shakeSelectedCards();
+                    this.lrsService.trackIncorrectGuess([...this.selectedWords], this.mistakes - 1);
                     this.mistakes--;
                     this.selectedWords = [];
                     if (this.mistakes === 0) {
                         this.gameComplete = true;
                         this.showMessage('Game Over! Better luck next time.', 'error');
+                        this.lrsService.trackGameFailed(Date.now() - this.gameStartTime, 4);
                         this.revealAllGroups();
                     }
                 }

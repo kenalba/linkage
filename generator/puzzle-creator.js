@@ -259,11 +259,22 @@ class PuzzleCreator {
 
         const title = document.getElementById('puzzleTitle').value || 'Linkages Puzzle';
         const instructions = 'Find groups of four items that share something in common.';
+        const lrsEndpoint = document.getElementById('lrsEndpoint')?.value || '';
+        const lrsApiKey = document.getElementById('lrsApiKey')?.value || '';
+        const lrsApiSecret = document.getElementById('lrsApiSecret')?.value || '';
+        
+        // Create Basic auth token from API key and secret
+        let lrsAuthToken = '';
+        if (lrsApiKey && lrsApiSecret) {
+            lrsAuthToken = 'Basic ' + btoa(lrsApiKey + ':' + lrsApiSecret);
+        }
         
         let html = this.gameTemplate;
         html = html.replace(/\{\{TITLE\}\}/g, title);
         html = html.replace(/\{\{INSTRUCTIONS\}\}/g, instructions);
         html = html.replace(/\{\{GAME_DATA\}\}/g, JSON.stringify(this.generatedPuzzle, null, 8));
+        html = html.replace(/\{\{LRS_ENDPOINT\}\}/g, lrsEndpoint);
+        html = html.replace(/\{\{LRS_AUTH_TOKEN\}\}/g, lrsAuthToken);
 
         return { html, title };
     }
