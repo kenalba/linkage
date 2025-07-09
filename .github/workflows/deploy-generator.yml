@@ -1,0 +1,137 @@
+name: Deploy Site with Puzzle Generator
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'generator/package.json'
+        
+    - name: Install dependencies
+      run: |
+        cd generator
+        npm ci
+        
+    - name: Build generator
+      run: |
+        cd generator
+        npm run build
+        
+    - name: Regenerate sample games with latest template
+      run: |
+        cd generator
+        # Always regenerate sample games to ensure they have the latest UI features
+        # This ensures the banner system and other enhancements are always current
+        mkdir -p ../output
+        
+        # Create sample game data files
+        cat > sample-1.json << 'EOF'
+        {
+          "title": "🔗 Linkages Demo",
+          "groups": [
+            {
+              "category": "Dog Breeds",
+              "words": ["BEAGLE", "POODLE", "BOXER", "HUSKY"],
+              "difficulty": "yellow"
+            },
+            {
+              "category": "Coffee Types", 
+              "words": ["LATTE", "MOCHA", "ESPRESSO", "CAPPUCCINO"],
+              "difficulty": "green"
+            },
+            {
+              "category": "Things That Are Round",
+              "words": ["BALL", "WHEEL", "COIN", "PLATE"],
+              "difficulty": "blue"
+            },
+            {
+              "category": "Words That Can Follow 'Fire'",
+              "words": ["WORKS", "PLACE", "TRUCK", "ALARM"],
+              "difficulty": "purple"
+            }
+          ]
+        }
+        EOF
+        
+        cat > sample-2.json << 'EOF'
+        {
+          "title": "🔗 Linkages Demo",
+          "groups": [
+            {
+              "category": "Types of Clouds",
+              "words": ["CUMULUS", "STRATUS", "CIRRUS", "NIMBUS"],
+              "difficulty": "yellow"
+            },
+            {
+              "category": "Parts of a Flower",
+              "words": ["PETAL", "STAMEN", "PISTIL", "SEPAL"],
+              "difficulty": "green"
+            },
+            {
+              "category": "Gemstones",
+              "words": ["RUBY", "EMERALD", "SAPPHIRE", "DIAMOND"],
+              "difficulty": "blue"
+            },
+            {
+              "category": "Words That Can Follow 'Sun'",
+              "words": ["FLOWER", "RISE", "SET", "BEAM"],
+              "difficulty": "purple"
+            }
+          ]
+        }
+        EOF
+        
+        # Generate sample games with latest template
+        node game-generator.js sample-1.json ../output/test-game.html
+        node game-generator.js sample-2.json ../output/science-nature-game.html
+        
+        # Clean up temp files
+        rm sample-1.json sample-2.json
+        
+    - name: Prepare site for deployment
+      run: |
+        # Create deployment directory
+        mkdir -p _site
+        
+        # Copy main site files
+        cp -r index.html demo-game.html output _site/
+        
+        # Copy built generator to /generator subdirectory
+        cp -r generator/dist _site/generator
+        
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: '_site'
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2

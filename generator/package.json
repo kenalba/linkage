@@ -1,0 +1,14 @@
+{
+  "name": "linkages-puzzle-creator",
+  "version": "1.0.0",
+  "description": "Development environment for Linkages puzzle creator",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

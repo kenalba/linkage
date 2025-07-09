@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connections Game</title>
+    <title>🔗 Linkages Demo</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <style>
         * {
             margin: 0;
@@ -67,6 +68,73 @@
             margin-bottom: 20px;
             max-width: 460px;
             margin: 0 auto 20px auto;
+        }
+
+        .found-group-banner {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: default;
+            transition: all 0.3s ease;
+            margin-bottom: 4px;
+        }
+
+        .found-group-banner.yellow {
+            background: #f1c40f;
+            border-color: #f39c12;
+            color: #333;
+        }
+
+        .found-group-banner.green {
+            background: #2ecc71;
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .found-group-banner.blue {
+            background: #3498db;
+            border-color: #2980b9;
+            color: white;
+        }
+
+        .found-group-banner.purple {
+            background: #9b59b6;
+            border-color: #8e44ad;
+            color: white;
+        }
+
+        .banner-category {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .banner-words {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .word-card.shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .word-card.fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .word-card {
@@ -157,49 +225,6 @@
             cursor: not-allowed;
         }
 
-        .found-groups {
-            margin-top: 20px;
-        }
-
-        .group-result {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .group-result.yellow {
-            background: #f1c40f;
-            color: #333;
-        }
-
-        .group-result.green {
-            background: #2ecc71;
-            color: white;
-        }
-
-        .group-result.blue {
-            background: #3498db;
-            color: white;
-        }
-
-        .group-result.purple {
-            background: #9b59b6;
-            color: white;
-        }
-
-        .group-category {
-            font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-
-        .group-words {
-            font-size: 14px;
-            opacity: 0.9;
-        }
 
         .game-message {
             text-align: center;
@@ -246,13 +271,26 @@
             .game-title {
                 font-size: 20px;
             }
+            
+            .found-group-banner {
+                padding: 8px;
+            }
+            
+            .banner-category {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+            
+            .banner-words {
+                font-size: 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="game-header">
-            <div class="game-title">Science & Nature Connections</div>
+            <div class="game-title">🔗 Linkages</div>
             <div class="game-instructions">Find groups of four items that share something in common.</div>
             <div class="game-stats">
                 <span>Mistakes remaining: <span class="mistakes" id="mistakes">4</span></span>
@@ -271,8 +309,6 @@
             <button class="btn" id="submit-btn" disabled>Submit</button>
         </div>
 
-        <div class="found-groups" id="found-groups">
-        </div>
     </div>
 
     <script>
@@ -295,7 +331,6 @@
                 this.mistakesEl = document.getElementById('mistakes');
                 this.groupsFoundEl = document.getElementById('groups-found');
                 this.gameMessageEl = document.getElementById('game-message');
-                this.foundGroupsEl = document.getElementById('found-groups');
                 this.shuffleBtn = document.getElementById('shuffle-btn');
                 this.deselectBtn = document.getElementById('deselect-btn');
                 this.submitBtn = document.getElementById('submit-btn');
@@ -384,20 +419,31 @@
             renderGrid() {
                 this.wordGrid.innerHTML = '';
                 
-                this.shuffledWords.forEach(word => {
+                // Render found group banners first
+                this.foundGroups.forEach(group => {
+                    const banner = document.createElement('div');
+                    banner.className = `found-group-banner ${group.difficulty}`;
+                    banner.innerHTML = `
+                        <div class="banner-category">${group.category}</div>
+                        <div class="banner-words">${group.words.join(', ')}</div>
+                    `;
+                    this.wordGrid.appendChild(banner);
+                });
+                
+                // Get remaining words (not in found groups)
+                const remainingWords = this.shuffledWords.filter(word => 
+                    !this.foundGroups.some(group => group.words.includes(word))
+                );
+                
+                // Render remaining word cards
+                remainingWords.forEach(word => {
                     const wordCard = document.createElement('div');
-                    wordCard.className = 'word-card';
+                    wordCard.className = 'word-card fade-in';
                     wordCard.textContent = word;
                     wordCard.dataset.word = word;
                     
                     this.adjustFontSize(wordCard, word);
-                    
-                    const foundGroup = this.foundGroups.find(group => group.words.includes(word));
-                    if (foundGroup) {
-                        wordCard.classList.add('found', foundGroup.difficulty);
-                    } else {
-                        wordCard.addEventListener('click', () => this.toggleWord(word));
-                    }
+                    wordCard.addEventListener('click', () => this.toggleWord(word));
                     
                     this.wordGrid.appendChild(wordCard);
                 });
@@ -461,14 +507,15 @@
             }
 
             shuffleWords() {
+                // Only shuffle the remaining unmatched words
                 const remainingWords = this.shuffledWords.filter(word => 
                     !this.foundGroups.some(group => group.words.includes(word))
                 );
-                const foundWords = this.shuffledWords.filter(word => 
-                    this.foundGroups.some(group => group.words.includes(word))
-                );
                 
-                this.shuffledWords = [...this.shuffleArray(remainingWords), ...foundWords];
+                // Update shuffled words with new order
+                const foundWords = this.foundGroups.flatMap(group => group.words);
+                this.shuffledWords = [...foundWords, ...this.shuffleArray(remainingWords)];
+                
                 this.renderGrid();
             }
 
@@ -481,16 +528,18 @@
                 );
                 
                 if (correctGroup) {
+                    // Correct guess - add to found groups
                     this.foundGroups.push(correctGroup);
                     this.selectedWords = [];
-                    this.renderFoundGroup(correctGroup);
-                    this.showMessage('Correct! Well done.', 'success');
                     
+                    // Check if game is complete
                     if (this.foundGroups.length === 4) {
                         this.gameComplete = true;
-                        this.showMessage('Congratulations! You solved the puzzle!', 'success');
+                        this.showMessage('🎉 Congratulations! You solved the puzzle!', 'success');
                     }
                 } else {
+                    // Incorrect guess - shake selected cards and reduce mistakes
+                    this.shakeSelectedCards();
                     this.mistakes--;
                     this.selectedWords = [];
                     
@@ -498,8 +547,6 @@
                         this.gameComplete = true;
                         this.showMessage('Game Over! Better luck next time.', 'error');
                         this.revealAllGroups();
-                    } else {
-                        this.showMessage(`Not quite right. ${this.mistakes} mistake${this.mistakes === 1 ? '' : 's'} remaining.`, 'warning');
                     }
                 }
                 
@@ -508,23 +555,25 @@
                 this.renderGrid();
             }
 
-            renderFoundGroup(group) {
-                const groupEl = document.createElement('div');
-                groupEl.className = `group-result ${group.difficulty}`;
-                groupEl.innerHTML = `
-                    <div class="group-category">${group.category}</div>
-                    <div class="group-words">${group.words.join(', ')}</div>
-                `;
-                this.foundGroupsEl.appendChild(groupEl);
+            shakeSelectedCards() {
+                // Add shake animation to selected cards
+                const selectedCards = this.wordGrid.querySelectorAll('.word-card.selected');
+                selectedCards.forEach(card => {
+                    card.classList.add('shake');
+                    setTimeout(() => {
+                        card.classList.remove('shake');
+                    }, 500);
+                });
             }
+
 
             revealAllGroups() {
                 this.gameData.groups.forEach(group => {
                     if (!this.foundGroups.includes(group)) {
                         this.foundGroups.push(group);
-                        this.renderFoundGroup(group);
                     }
                 });
+                this.renderGrid();
             }
 
             updateStats() {

@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class ConnectionsGenerator {
     constructor() {
-        this.templatePath = path.join(__dirname, '..', 'index.html');
+        this.templatePath = path.join(__dirname, '..', 'demo-game.html');
     }
 
     generateGame(gameData, outputPath = '../output/connections-game.html') {
@@ -136,7 +140,7 @@ class ConnectionsGenerator {
     }
 }
 
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     const generator = new ConnectionsGenerator();
     const args = process.argv.slice(2);
 
@@ -162,4 +166,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = ConnectionsGenerator;
+export default ConnectionsGenerator;

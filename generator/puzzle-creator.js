@@ -10,279 +10,17 @@ class PuzzleCreator {
 
     async loadGameTemplate() {
         try {
-            const response = await fetch('../index.html');
+            const response = await fetch('./game-template.html');
+            if (!response.ok) {
+                throw new Error(`Failed to fetch template: ${response.status}`);
+            }
             this.gameTemplate = await response.text();
         } catch (error) {
             console.error('Failed to load game template:', error);
-            this.gameTemplate = this.getEmbeddedTemplate();
+            alert('Failed to load game template. Please run "npm run dev" to start the development server.');
         }
     }
 
-    getEmbeddedTemplate() {
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{TITLE}}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f7f7f7; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-        .game-container { max-width: 500px; width: 100%; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); padding: 20px; }
-        .game-header { text-align: center; margin-bottom: 20px; }
-        .game-title { font-size: 24px; font-weight: bold; color: #333; margin-bottom: 10px; }
-        .game-instructions { font-size: 14px; color: #666; margin-bottom: 10px; }
-        .game-stats { display: flex; justify-content: space-between; font-size: 14px; color: #888; margin-bottom: 20px; }
-        .mistakes { color: #e74c3c; }
-        .word-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; max-width: 460px; margin: 0 auto 20px auto; }
-        .word-card { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 16px 8px; text-align: center; font-size: 14px; font-weight: 500; color: #333; cursor: pointer; transition: all 0.2s ease; width: 110px; height: 60px; display: flex; align-items: center; justify-content: center; user-select: none; word-wrap: break-word; hyphens: auto; }
-        .word-card:hover { background: #e9ecef; border-color: #dee2e6; }
-        .word-card.selected { background: #333; color: white; border-color: #333; }
-        .found-group-banner { grid-column: 1 / -1; background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 12px; text-align: center; cursor: default; transition: all 0.3s ease; margin-bottom: 4px; }
-        .found-group-banner.yellow { background: #f1c40f; border-color: #f39c12; color: #333; }
-        .found-group-banner.green { background: #2ecc71; border-color: #27ae60; color: white; }
-        .found-group-banner.blue { background: #3498db; border-color: #2980b9; color: white; }
-        .found-group-banner.purple { background: #9b59b6; border-color: #8e44ad; color: white; }
-        .banner-category { font-weight: bold; font-size: 14px; margin-bottom: 8px; text-transform: uppercase; }
-        .banner-words { font-size: 12px; opacity: 0.9; }
-        .word-card.shake { animation: shake 0.5s ease-in-out; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-        .word-card.fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .controls { text-align: center; margin-bottom: 20px; }
-        .btn { background: #333; color: white; border: none; border-radius: 20px; padding: 10px 20px; font-size: 14px; font-weight: 500; cursor: pointer; margin: 0 5px; transition: all 0.2s ease; }
-        .btn:hover { background: #555; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        .game-message { text-align: center; padding: 15px; margin: 10px 0; border-radius: 8px; font-weight: 500; }
-        .game-message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .game-message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .game-message.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
-        @media (max-width: 480px) {
-            .game-container { padding: 15px; }
-            .word-grid { max-width: 320px; }
-            .word-card { padding: 12px 6px; font-size: 12px; width: 75px; height: 50px; }
-            .game-title { font-size: 20px; }
-            .found-group-banner { padding: 8px; }
-            .banner-category { font-size: 12px; margin-bottom: 6px; }
-            .banner-words { font-size: 10px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="game-container">
-        <div class="game-header">
-            <div class="game-title">{{TITLE}}</div>
-            <div class="game-instructions">{{INSTRUCTIONS}}</div>
-            <div class="game-stats">
-                <span>Mistakes remaining: <span class="mistakes" id="mistakes">4</span></span>
-                <span>Groups found: <span id="groups-found">0</span>/4</span>
-            </div>
-        </div>
-        <div id="game-message" class="game-message" style="display: none;"></div>
-        <div class="word-grid" id="word-grid"></div>
-        <div class="controls">
-            <button class="btn" id="shuffle-btn">Shuffle</button>
-            <button class="btn" id="deselect-btn">Deselect All</button>
-            <button class="btn" id="submit-btn" disabled>Submit</button>
-        </div>
-    </div>
-    <script>
-        class ConnectionsGame {
-            constructor() {
-                this.gameData = null;
-                this.selectedWords = [];
-                this.foundGroups = [];
-                this.mistakes = 4;
-                this.gameComplete = false;
-                this.shuffledWords = [];
-                this.initializeElements();
-                this.setupEventListeners();
-                this.loadGame();
-            }
-            initializeElements() {
-                this.wordGrid = document.getElementById('word-grid');
-                this.mistakesEl = document.getElementById('mistakes');
-                this.groupsFoundEl = document.getElementById('groups-found');
-                this.gameMessageEl = document.getElementById('game-message');
-                this.shuffleBtn = document.getElementById('shuffle-btn');
-                this.deselectBtn = document.getElementById('deselect-btn');
-                this.submitBtn = document.getElementById('submit-btn');
-            }
-            setupEventListeners() {
-                this.shuffleBtn.addEventListener('click', () => this.shuffleWords());
-                this.deselectBtn.addEventListener('click', () => this.deselectAll());
-                this.submitBtn.addEventListener('click', () => this.submitGuess());
-            }
-            loadGame() {
-                this.gameData = {{GAME_DATA}};
-                this.initializeGame();
-            }
-            initializeGame() {
-                this.selectedWords = [];
-                this.foundGroups = [];
-                this.mistakes = 4;
-                this.gameComplete = false;
-                this.shuffledWords = this.shuffleArray(this.getAllWords());
-                this.renderGrid();
-                this.updateStats();
-                this.hideMessage();
-            }
-            getAllWords() {
-                return this.gameData.groups.flatMap(group => group.words);
-            }
-            shuffleArray(array) {
-                const shuffled = [...array];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                return shuffled;
-            }
-            renderGrid() {
-                this.wordGrid.innerHTML = '';
-                this.foundGroups.forEach(group => {
-                    const banner = document.createElement('div');
-                    banner.className = \\`found-group-banner \\${group.difficulty}\\`;
-                    banner.innerHTML = \\`
-                        <div class="banner-category">\\${group.category}</div>
-                        <div class="banner-words">\\${group.words.join(', ')}</div>
-                    \\`;
-                    this.wordGrid.appendChild(banner);
-                });
-                const remainingWords = this.shuffledWords.filter(word => 
-                    !this.foundGroups.some(group => group.words.includes(word))
-                );
-                remainingWords.forEach(word => {
-                    const wordCard = document.createElement('div');
-                    wordCard.className = 'word-card fade-in';
-                    wordCard.textContent = word;
-                    wordCard.dataset.word = word;
-                    this.adjustFontSize(wordCard, word);
-                    wordCard.addEventListener('click', () => this.toggleWord(word));
-                    this.wordGrid.appendChild(wordCard);
-                });
-                this.updateSelectedState();
-            }
-            adjustFontSize(wordCard, word) {
-                const maxFontSize = window.innerWidth <= 480 ? 12 : 14;
-                const minFontSize = window.innerWidth <= 480 ? 9 : 10;
-                let fontSize = maxFontSize;
-                if (word.length <= 6) {
-                    fontSize = maxFontSize;
-                } else if (word.length <= 8) {
-                    fontSize = maxFontSize - 1;
-                } else if (word.length <= 10) {
-                    fontSize = maxFontSize - 2;
-                } else {
-                    fontSize = minFontSize;
-                }
-                wordCard.style.fontSize = fontSize + 'px';
-            }
-            toggleWord(word) {
-                if (this.gameComplete) return;
-                const index = this.selectedWords.indexOf(word);
-                if (index > -1) {
-                    this.selectedWords.splice(index, 1);
-                } else if (this.selectedWords.length < 4) {
-                    this.selectedWords.push(word);
-                }
-                this.updateSelectedState();
-                this.updateSubmitButton();
-            }
-            updateSelectedState() {
-                const wordCards = this.wordGrid.querySelectorAll('.word-card');
-                wordCards.forEach(card => {
-                    const word = card.dataset.word;
-                    if (this.selectedWords.includes(word)) {
-                        card.classList.add('selected');
-                    } else {
-                        card.classList.remove('selected');
-                    }
-                });
-            }
-            updateSubmitButton() {
-                this.submitBtn.disabled = this.selectedWords.length !== 4;
-            }
-            deselectAll() {
-                this.selectedWords = [];
-                this.updateSelectedState();
-                this.updateSubmitButton();
-            }
-            shuffleWords() {
-                const remainingWords = this.shuffledWords.filter(word => 
-                    !this.foundGroups.some(group => group.words.includes(word))
-                );
-                const foundWords = this.foundGroups.flatMap(group => group.words);
-                this.shuffledWords = [...foundWords, ...this.shuffleArray(remainingWords)];
-                this.renderGrid();
-            }
-            submitGuess() {
-                if (this.selectedWords.length !== 4) return;
-                const correctGroup = this.gameData.groups.find(group => 
-                    this.selectedWords.every(word => group.words.includes(word)) &&
-                    group.words.every(word => this.selectedWords.includes(word))
-                );
-                if (correctGroup) {
-                    this.foundGroups.push(correctGroup);
-                    this.selectedWords = [];
-                    if (this.foundGroups.length === 4) {
-                        this.gameComplete = true;
-                        this.showMessage('🎉 Congratulations! You solved the puzzle!', 'success');
-                    }
-                } else {
-                    this.shakeSelectedCards();
-                    this.mistakes--;
-                    this.selectedWords = [];
-                    if (this.mistakes === 0) {
-                        this.gameComplete = true;
-                        this.showMessage('Game Over! Better luck next time.', 'error');
-                        this.revealAllGroups();
-                    }
-                }
-                this.updateStats();
-                this.updateSubmitButton();
-                this.renderGrid();
-            }
-            shakeSelectedCards() {
-                const selectedCards = this.wordGrid.querySelectorAll('.word-card.selected');
-                selectedCards.forEach(card => {
-                    card.classList.add('shake');
-                    setTimeout(() => {
-                        card.classList.remove('shake');
-                    }, 500);
-                });
-            }
-            revealAllGroups() {
-                this.gameData.groups.forEach(group => {
-                    if (!this.foundGroups.includes(group)) {
-                        this.foundGroups.push(group);
-                    }
-                });
-                this.renderGrid();
-            }
-            updateStats() {
-                this.mistakesEl.textContent = this.mistakes;
-                this.groupsFoundEl.textContent = this.foundGroups.length;
-            }
-            showMessage(text, type) {
-                this.gameMessageEl.textContent = text;
-                this.gameMessageEl.className = \`game-message \${type}\`;
-                this.gameMessageEl.style.display = 'block';
-                setTimeout(() => {
-                    this.hideMessage();
-                }, 3000);
-            }
-            hideMessage() {
-                this.gameMessageEl.style.display = 'none';
-            }
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            new ConnectionsGame();
-        });
-    </script>
-</body>
-</html>`;
-    }
 
     initializeManualGroups() {
         const container = document.getElementById('manual-groups');
@@ -513,8 +251,11 @@ class PuzzleCreator {
         }
     }
 
-    downloadPuzzle() {
-        if (!this.generatedPuzzle) return;
+    generateGameHTML() {
+        if (!this.generatedPuzzle || !this.gameTemplate) {
+            alert('Please wait for the template to load or try refreshing the page.');
+            return null;
+        }
 
         const title = document.getElementById('puzzleTitle').value || 'Linkages Puzzle';
         const instructions = 'Find groups of four items that share something in common.';
@@ -524,7 +265,10 @@ class PuzzleCreator {
         html = html.replace(/\{\{INSTRUCTIONS\}\}/g, instructions);
         html = html.replace(/\{\{GAME_DATA\}\}/g, JSON.stringify(this.generatedPuzzle, null, 8));
 
-        // Clean filename and ensure .html extension
+        return { html, title };
+    }
+
+    getCleanFilename(title) {
         let filename = title.toLowerCase()
             .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
             .replace(/\s+/g, '-')         // Replace spaces with hyphens
@@ -533,8 +277,47 @@ class PuzzleCreator {
         
         if (!filename) filename = 'linkages-puzzle';
         if (!filename.endsWith('.html')) filename += '.html';
+        
+        return filename;
+    }
 
-        const blob = new Blob([html], { type: 'text/html' });
+    async previewPuzzle() {
+        const gameData = this.generateGameHTML();
+        if (!gameData) return;
+
+        const filename = this.getCleanFilename(gameData.title);
+
+        try {
+            const response = await fetch('/api/save-game', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    filename: filename,
+                    content: gameData.html
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                // Update UI to show preview link
+                this.showPreviewLink(result.filename);
+            } else {
+                alert('Failed to save game for preview: ' + result.error);
+            }
+        } catch (error) {
+            alert('Failed to save game for preview: ' + error.message);
+        }
+    }
+
+    downloadPuzzle() {
+        const gameData = this.generateGameHTML();
+        if (!gameData) return;
+
+        const filename = this.getCleanFilename(gameData.title);
+
+        const blob = new Blob([gameData.html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -543,6 +326,37 @@ class PuzzleCreator {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    }
+
+    showPreviewLink(filename) {
+        const previewContainer = document.getElementById('previewContainer');
+        if (!previewContainer) {
+            // Create preview container if it doesn't exist
+            const container = document.createElement('div');
+            container.id = 'previewContainer';
+            container.className = 'preview-container';
+            container.innerHTML = `
+                <div class="preview-message">
+                    <strong>✅ Game saved successfully!</strong>
+                    <a href="../output/${filename}" target="_blank" class="preview-link">
+                        🎮 Preview Game
+                    </a>
+                </div>
+            `;
+            
+            const buttonGroup = document.querySelector('#step3 .button-group');
+            buttonGroup.parentNode.insertBefore(container, buttonGroup);
+        } else {
+            // Update existing preview container
+            previewContainer.innerHTML = `
+                <div class="preview-message">
+                    <strong>✅ Game saved successfully!</strong>
+                    <a href="../output/${filename}" target="_blank" class="preview-link">
+                        🎮 Preview Game
+                    </a>
+                </div>
+            `;
+        }
     }
 
     showStep(stepNumber) {
@@ -632,6 +446,10 @@ function downloadSampleJSON() {
 
 function copySampleJSON() {
     puzzleCreator.copySampleJSON();
+}
+
+function previewPuzzle() {
+    puzzleCreator.previewPuzzle();
 }
 
 function downloadPuzzle() {
