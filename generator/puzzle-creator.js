@@ -38,23 +38,21 @@ class PuzzleCreator {
         .word-card { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 16px 8px; text-align: center; font-size: 14px; font-weight: 500; color: #333; cursor: pointer; transition: all 0.2s ease; width: 110px; height: 60px; display: flex; align-items: center; justify-content: center; user-select: none; word-wrap: break-word; hyphens: auto; }
         .word-card:hover { background: #e9ecef; border-color: #dee2e6; }
         .word-card.selected { background: #333; color: white; border-color: #333; }
-        .word-card.found { cursor: default; opacity: 0.8; }
-        .word-card.found.yellow { background: #f1c40f; border-color: #f39c12; color: #333; }
-        .word-card.found.green { background: #2ecc71; border-color: #27ae60; color: white; }
-        .word-card.found.blue { background: #3498db; border-color: #2980b9; color: white; }
-        .word-card.found.purple { background: #9b59b6; border-color: #8e44ad; color: white; }
+        .found-group-banner { grid-column: 1 / -1; background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 12px; text-align: center; cursor: default; transition: all 0.3s ease; margin-bottom: 4px; }
+        .found-group-banner.yellow { background: #f1c40f; border-color: #f39c12; color: #333; }
+        .found-group-banner.green { background: #2ecc71; border-color: #27ae60; color: white; }
+        .found-group-banner.blue { background: #3498db; border-color: #2980b9; color: white; }
+        .found-group-banner.purple { background: #9b59b6; border-color: #8e44ad; color: white; }
+        .banner-category { font-weight: bold; font-size: 14px; margin-bottom: 8px; text-transform: uppercase; }
+        .banner-words { font-size: 12px; opacity: 0.9; }
+        .word-card.shake { animation: shake 0.5s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .word-card.fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .controls { text-align: center; margin-bottom: 20px; }
         .btn { background: #333; color: white; border: none; border-radius: 20px; padding: 10px 20px; font-size: 14px; font-weight: 500; cursor: pointer; margin: 0 5px; transition: all 0.2s ease; }
         .btn:hover { background: #555; }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
-        .found-groups { margin-top: 20px; }
-        .group-result { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px; text-align: center; }
-        .group-result.yellow { background: #f1c40f; color: #333; }
-        .group-result.green { background: #2ecc71; color: white; }
-        .group-result.blue { background: #3498db; color: white; }
-        .group-result.purple { background: #9b59b6; color: white; }
-        .group-category { font-weight: bold; font-size: 16px; margin-bottom: 5px; text-transform: uppercase; }
-        .group-words { font-size: 14px; opacity: 0.9; }
         .game-message { text-align: center; padding: 15px; margin: 10px 0; border-radius: 8px; font-weight: 500; }
         .game-message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .game-message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -64,6 +62,9 @@ class PuzzleCreator {
             .word-grid { max-width: 320px; }
             .word-card { padding: 12px 6px; font-size: 12px; width: 75px; height: 50px; }
             .game-title { font-size: 20px; }
+            .found-group-banner { padding: 8px; }
+            .banner-category { font-size: 12px; margin-bottom: 6px; }
+            .banner-words { font-size: 10px; }
         }
     </style>
 </head>
@@ -84,7 +85,6 @@ class PuzzleCreator {
             <button class="btn" id="deselect-btn">Deselect All</button>
             <button class="btn" id="submit-btn" disabled>Submit</button>
         </div>
-        <div class="found-groups" id="found-groups"></div>
     </div>
     <script>
         class ConnectionsGame {
@@ -104,7 +104,6 @@ class PuzzleCreator {
                 this.mistakesEl = document.getElementById('mistakes');
                 this.groupsFoundEl = document.getElementById('groups-found');
                 this.gameMessageEl = document.getElementById('game-message');
-                this.foundGroupsEl = document.getElementById('found-groups');
                 this.shuffleBtn = document.getElementById('shuffle-btn');
                 this.deselectBtn = document.getElementById('deselect-btn');
                 this.submitBtn = document.getElementById('submit-btn');
@@ -141,18 +140,25 @@ class PuzzleCreator {
             }
             renderGrid() {
                 this.wordGrid.innerHTML = '';
-                this.shuffledWords.forEach(word => {
+                this.foundGroups.forEach(group => {
+                    const banner = document.createElement('div');
+                    banner.className = \\`found-group-banner \\${group.difficulty}\\`;
+                    banner.innerHTML = \\`
+                        <div class="banner-category">\\${group.category}</div>
+                        <div class="banner-words">\\${group.words.join(', ')}</div>
+                    \\`;
+                    this.wordGrid.appendChild(banner);
+                });
+                const remainingWords = this.shuffledWords.filter(word => 
+                    !this.foundGroups.some(group => group.words.includes(word))
+                );
+                remainingWords.forEach(word => {
                     const wordCard = document.createElement('div');
-                    wordCard.className = 'word-card';
+                    wordCard.className = 'word-card fade-in';
                     wordCard.textContent = word;
                     wordCard.dataset.word = word;
                     this.adjustFontSize(wordCard, word);
-                    const foundGroup = this.foundGroups.find(group => group.words.includes(word));
-                    if (foundGroup) {
-                        wordCard.classList.add('found', foundGroup.difficulty);
-                    } else {
-                        wordCard.addEventListener('click', () => this.toggleWord(word));
-                    }
+                    wordCard.addEventListener('click', () => this.toggleWord(word));
                     this.wordGrid.appendChild(wordCard);
                 });
                 this.updateSelectedState();
@@ -206,10 +212,8 @@ class PuzzleCreator {
                 const remainingWords = this.shuffledWords.filter(word => 
                     !this.foundGroups.some(group => group.words.includes(word))
                 );
-                const foundWords = this.shuffledWords.filter(word => 
-                    this.foundGroups.some(group => group.words.includes(word))
-                );
-                this.shuffledWords = [...this.shuffleArray(remainingWords), ...foundWords];
+                const foundWords = this.foundGroups.flatMap(group => group.words);
+                this.shuffledWords = [...foundWords, ...this.shuffleArray(remainingWords)];
                 this.renderGrid();
             }
             submitGuess() {
@@ -221,43 +225,40 @@ class PuzzleCreator {
                 if (correctGroup) {
                     this.foundGroups.push(correctGroup);
                     this.selectedWords = [];
-                    this.renderFoundGroup(correctGroup);
-                    this.showMessage('Correct! Well done.', 'success');
                     if (this.foundGroups.length === 4) {
                         this.gameComplete = true;
-                        this.showMessage('Congratulations! You solved the puzzle!', 'success');
+                        this.showMessage('🎉 Congratulations! You solved the puzzle!', 'success');
                     }
                 } else {
+                    this.shakeSelectedCards();
                     this.mistakes--;
                     this.selectedWords = [];
                     if (this.mistakes === 0) {
                         this.gameComplete = true;
                         this.showMessage('Game Over! Better luck next time.', 'error');
                         this.revealAllGroups();
-                    } else {
-                        this.showMessage(\`Not quite right. \${this.mistakes} mistake\${this.mistakes === 1 ? '' : 's'} remaining.\`, 'warning');
                     }
                 }
                 this.updateStats();
                 this.updateSubmitButton();
                 this.renderGrid();
             }
-            renderFoundGroup(group) {
-                const groupEl = document.createElement('div');
-                groupEl.className = \`group-result \${group.difficulty}\`;
-                groupEl.innerHTML = \`
-                    <div class="group-category">\${group.category}</div>
-                    <div class="group-words">\${group.words.join(', ')}</div>
-                \`;
-                this.foundGroupsEl.appendChild(groupEl);
+            shakeSelectedCards() {
+                const selectedCards = this.wordGrid.querySelectorAll('.word-card.selected');
+                selectedCards.forEach(card => {
+                    card.classList.add('shake');
+                    setTimeout(() => {
+                        card.classList.remove('shake');
+                    }, 500);
+                });
             }
             revealAllGroups() {
                 this.gameData.groups.forEach(group => {
                     if (!this.foundGroups.includes(group)) {
                         this.foundGroups.push(group);
-                        this.renderFoundGroup(group);
                     }
                 });
+                this.renderGrid();
             }
             updateStats() {
                 this.mistakesEl.textContent = this.mistakes;
