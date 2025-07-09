@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{TITLE}}</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <!-- Uncomment the line below for remote debugging with Weinre -->
+    <!-- <script src="http://YOUR_IP:8080/target/target-script-min.js#linkage-debug"></script> -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f7f7f7; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
@@ -119,6 +121,74 @@
         .close-button.show {
             display: flex;
         }
+        
+        /* Debug panel for LRS testing */
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1001;
+            display: none;
+        }
+        
+        .debug-panel.show {
+            display: block;
+        }
+        
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #444;
+        }
+        
+        .debug-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .debug-btn {
+            background: #444;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        
+        .debug-btn:hover {
+            background: #555;
+        }
+        
+        .debug-btn.success {
+            background: #28a745;
+        }
+        
+        .debug-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 60px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 1002;
+        }
         .controls { text-align: center; margin-bottom: 20px; }
         .btn { background: #333; color: white; border: none; border-radius: 20px; padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; margin: 0 4px; transition: all 0.2s ease; }
         .btn:hover { background: #555; }
@@ -149,6 +219,18 @@
 </head>
 <body>
     <button class="close-button" id="close-button" onclick="window.close()">×</button>
+    <button class="debug-toggle" id="debug-toggle" onclick="toggleDebug()">Debug</button>
+    <div class="debug-panel" id="debug-panel">
+        <div class="debug-header">
+            <div><strong>LRS Debug Console</strong></div>
+            <div class="debug-actions">
+                <button class="debug-btn" onclick="copyDebugLogs()" id="copy-btn">Copy</button>
+                <button class="debug-btn" onclick="clearDebugLogs()">Clear</button>
+                <button class="debug-btn" onclick="testLRS()">Test</button>
+            </div>
+        </div>
+        <div id="debug-content"></div>
+    </div>
     <div class="game-container">
         <div class="game-header">
             <div class="game-title">{{TITLE}}</div>
@@ -167,15 +249,155 @@
         </div>
     </div>
     <script>
+        // Debug functionality for mobile debugging
+        let debugLogs = [];
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        function addDebugLog(level, ...args) {
+            const timestamp = new Date().toISOString().substring(11, 23);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            debugLogs.push(`[${timestamp}] ${level}: ${message}`);
+            
+            // Keep only last 50 logs
+            if (debugLogs.length > 50) {
+                debugLogs = debugLogs.slice(-50);
+            }
+            
+            updateDebugPanel();
+        }
+        
+        // Override console methods to capture LRS debug logs
+        console.log = function(...args) {
+            if (args[0] && args[0].toString().includes('LRS Debug')) {
+                addDebugLog('LOG', ...args);
+            }
+            originalConsoleLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            if (args[0] && args[0].toString().includes('LRS Debug')) {
+                addDebugLog('ERROR', ...args);
+            }
+            originalConsoleError.apply(console, args);
+        };
+        
+        function toggleDebug() {
+            const panel = document.getElementById('debug-panel');
+            panel.classList.toggle('show');
+        }
+        
+        function updateDebugPanel() {
+            const content = document.getElementById('debug-content');
+            if (content) {
+                content.innerHTML = debugLogs.map(log => `<div>${log}</div>`).join('');
+                content.scrollTop = content.scrollHeight;
+            }
+        }
+        
+        // Test function to manually trigger LRS
+        function testLRS() {
+            console.log('LRS Debug - Manual test triggered');
+            if (window.game && window.game.lrsService) {
+                console.log('LRS Debug - Testing with sample statement');
+                window.game.lrsService.trackIncorrectGuess(['TEST', 'WORDS'], 3);
+            } else {
+                console.log('LRS Debug - Game not initialized yet');
+            }
+        }
+        
+        // Copy debug logs to clipboard
+        async function copyDebugLogs() {
+            const copyBtn = document.getElementById('copy-btn');
+            const originalText = copyBtn.textContent;
+            
+            try {
+                // Create comprehensive debug report
+                const report = {
+                    timestamp: new Date().toISOString(),
+                    url: window.location.href,
+                    userAgent: navigator.userAgent,
+                    debugLogs: debugLogs,
+                    lrsConfig: window.game ? {
+                        enabled: window.game.lrsService.enabled,
+                        hasEndpoint: !!window.game.lrsService.endpoint,
+                        hasAuth: !!window.game.lrsService.authToken,
+                        hasActor: !!window.game.lrsService.actor
+                    } : 'Game not initialized'
+                };
+                
+                const reportText = JSON.stringify(report, null, 2);
+                
+                // Try modern clipboard API first
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(reportText);
+                } else {
+                    // Fallback for older browsers/webviews
+                    const textArea = document.createElement('textarea');
+                    textArea.value = reportText;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-9999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+                
+                // Show success feedback
+                copyBtn.textContent = '✓';
+                copyBtn.classList.add('success');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.remove('success');
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Failed to copy debug logs:', error);
+                copyBtn.textContent = '✗';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            }
+        }
+        
+        // Clear debug logs
+        function clearDebugLogs() {
+            debugLogs = [];
+            updateDebugPanel();
+            console.log('LRS Debug - Debug logs cleared');
+        }
+        
+        // Make functions globally available
+        window.toggleDebug = toggleDebug;
+        window.testLRS = testLRS;
+        window.copyDebugLogs = copyDebugLogs;
+        window.clearDebugLogs = clearDebugLogs;
+
         class LRSService {
             constructor() {
+                console.log('LRS Debug - Constructor called');
+                console.log('LRS Debug - Current URL:', window.location.href);
+                console.log('LRS Debug - URL search params:', window.location.search);
+                
                 // Parse URL parameters first (for Ander launch URLs)
                 const urlParams = this.parseURLParams();
+                console.log('LRS Debug - Parsed URL params:', urlParams);
                 
                 // Use URL parameters if available, otherwise fall back to embedded credentials
                 this.endpoint = urlParams.endpoint || '{{LRS_ENDPOINT}}' || null;
                 this.authToken = urlParams.auth || '{{LRS_AUTH_TOKEN}}' || null;
                 this.actor = urlParams.actor || null;
+                
+                console.log('LRS Debug - Final config:', {
+                    endpoint: this.endpoint,
+                    hasAuth: !!this.authToken,
+                    hasActor: !!this.actor,
+                    enabled: this.endpoint && this.authToken
+                });
                 
                 this.enabled = this.endpoint && this.authToken;
                 this.sessionId = this.generateSessionId();
@@ -226,8 +448,15 @@
             }
 
             async sendStatement(statement) {
+                console.log('LRS Debug - sendStatement called', {
+                    enabled: this.enabled,
+                    endpoint: this.endpoint,
+                    hasAuth: !!this.authToken,
+                    authType: this.authToken ? this.authToken.substring(0, 10) + '...' : 'none'
+                });
+                
                 if (!this.enabled) {
-                    console.log('LRS not configured, statement would be:', statement);
+                    console.log('LRS not configured, statement would be:', JSON.stringify(statement, null, 2));
                     return;
                 }
 
@@ -239,7 +468,15 @@
                         authHeader = `Bearer ${authHeader}`;
                     }
 
-                    const response = await fetch(this.endpoint + '/statements', {
+                    // Properly construct URL to avoid double slashes
+                    const statementsUrl = this.endpoint.endsWith('/') 
+                        ? this.endpoint + 'statements' 
+                        : this.endpoint + '/statements';
+                    
+                    console.log('LRS Debug - Sending request to:', statementsUrl);
+                    console.log('LRS Debug - Statement:', JSON.stringify(statement, null, 2));
+
+                    const response = await fetch(statementsUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -249,11 +486,23 @@
                         body: JSON.stringify(statement)
                     });
 
+                    console.log('LRS Debug - Response status:', response.status);
+                    console.log('LRS Debug - Response headers:', Object.fromEntries(response.headers.entries()));
+
                     if (!response.ok) {
-                        throw new Error(`LRS request failed: ${response.status}`);
+                        const responseText = await response.text();
+                        console.error('LRS Debug - Error response body:', responseText);
+                        throw new Error(`LRS request failed: ${response.status} - ${responseText}`);
                     }
+                    
+                    const responseBody = await response.text();
+                    console.log('LRS Debug - Success response:', responseBody);
                 } catch (error) {
-                    console.error('Failed to send LRS statement:', error);
+                    console.error('LRS Debug - Failed to send statement:', error);
+                    console.error('LRS Debug - Error details:', {
+                        message: error.message,
+                        stack: error.stack
+                    });
                 }
             }
 
@@ -662,7 +911,7 @@
             }
         }
         document.addEventListener('DOMContentLoaded', () => {
-            new ConnectionsGame();
+            window.game = new ConnectionsGame();
         });
     </script>
 </body>
