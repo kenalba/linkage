@@ -69,11 +69,45 @@
     <script>
         class LRSService {
             constructor() {
-                this.endpoint = '{{LRS_ENDPOINT}}' || null;
-                this.authToken = '{{LRS_AUTH_TOKEN}}' || null;
+                // Parse URL parameters first (for Ander launch URLs)
+                const urlParams = this.parseURLParams();
+                
+                // Use URL parameters if available, otherwise fall back to embedded credentials
+                this.endpoint = urlParams.endpoint || '{{LRS_ENDPOINT}}' || null;
+                this.authToken = urlParams.auth || '{{LRS_AUTH_TOKEN}}' || null;
+                this.actor = urlParams.actor || null;
+                
                 this.enabled = this.endpoint && this.authToken;
                 this.sessionId = this.generateSessionId();
                 this.gameStartTime = new Date().toISOString();
+            }
+
+            parseURLParams() {
+                const params = new URLSearchParams(window.location.search);
+                const result = {};
+                
+                // Parse endpoint parameter
+                if (params.has('endpoint')) {
+                    result.endpoint = decodeURIComponent(params.get('endpoint'));
+                }
+                
+                // Parse auth parameter (already Base64-encoded by Ander)
+                if (params.has('auth')) {
+                    result.auth = decodeURIComponent(params.get('auth'));
+                }
+                
+                // Parse actor parameter (JSON object)
+                if (params.has('actor')) {
+                    try {
+                        const actorString = decodeURIComponent(params.get('actor'));
+                        result.actor = JSON.parse(actorString);
+                    } catch (error) {
+                        console.warn('Failed to parse actor parameter:', error);
+                        result.actor = null;
+                    }
+                }
+                
+                return result;
             }
 
             generateUUID() {
@@ -124,13 +158,24 @@
             }
 
             createBaseStatement(verb, result = {}) {
+                // Use actor from URL parameters if available, otherwise use anonymous
+                let actor = {
+                    name: 'Anonymous User',
+                    mbox: 'mailto:anonymous@example.com'
+                };
+                
+                if (this.actor) {
+                    // Handle Ander's actor format: {"name": ["Learner Name"], "mbox": ["mailto:learner@email.com"]}
+                    actor = {
+                        name: Array.isArray(this.actor.name) ? this.actor.name[0] : this.actor.name,
+                        mbox: Array.isArray(this.actor.mbox) ? this.actor.mbox[0] : this.actor.mbox
+                    };
+                }
+                
                 return {
                     id: this.generateStatementId(),
                     timestamp: new Date().toISOString(),
-                    actor: {
-                        name: 'Anonymous User',
-                        mbox: 'mailto:anonymous@example.com'
-                    },
+                    actor: actor,
                     verb: verb,
                     object: {
                         id: window.location.href,
@@ -144,7 +189,8 @@
                         registration: this.sessionId,
                         extensions: {
                             'http://id.tincanapi.com/extension/session-id': this.sessionId,
-                            'http://id.tincanapi.com/extension/game-start-time': this.gameStartTime
+                            'http://id.tincanapi.com/extension/game-start-time': this.gameStartTime,
+                            'http://id.tincanapi.com/extension/launch-url': window.location.href
                         }
                     }
                 };

@@ -103,7 +103,12 @@
                         <div class="lrs-help">
                             <small>📊 <strong>What gets tracked:</strong> Incorrect guesses, correct category finds, game completion/failure<br>
                             🔒 <strong>Privacy:</strong> Only game events are sent, no personal data<br>
-                            ⚠️ <strong>Leave empty to disable tracking</strong></small>
+                            ⚠️ <strong>Leave empty to disable tracking</strong><br><br>
+                            
+                            <strong>🚀 Ander LMS Integration:</strong><br>
+                            When launched from Ander, credentials are passed via URL parameters for security:<br>
+                            <code>?endpoint=https://lrs.com/xapi&auth=Basic [token]&actor={"name":["User"],"mbox":["mailto:user@email.com"]}</code><br>
+                            This overrides the embedded credentials and uses real learner identity.</small>
                         </div>
                     </div>
                 </div>
