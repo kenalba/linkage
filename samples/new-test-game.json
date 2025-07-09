@@ -1,0 +1,26 @@
+{
+  "title": "Science & Nature Connections",
+  "instructions": "Find groups of four items that share something in common.",
+  "groups": [
+    {
+      "category": "Types of Clouds",
+      "words": ["CUMULUS", "STRATUS", "CIRRUS", "NIMBUS"],
+      "difficulty": "yellow"
+    },
+    {
+      "category": "Parts of a Flower",
+      "words": ["PETAL", "STAMEN", "PISTIL", "SEPAL"],
+      "difficulty": "green"
+    },
+    {
+      "category": "Gemstones",
+      "words": ["RUBY", "EMERALD", "SAPPHIRE", "DIAMOND"],
+      "difficulty": "blue"
+    },
+    {
+      "category": "Words That Can Follow 'Sun'",
+      "words": ["FLOWER", "RISE", "SET", "BEAM"],
+      "difficulty": "purple"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "title": "Connections Game",
+  "instructions": "Find groups of four items that share something in common.",
+  "groups": [
+    {
+      "category": "Dog Breeds",
+      "words": ["BEAGLE", "POODLE", "BOXER", "HUSKY"],
+      "difficulty": "yellow"
+    },
+    {
+      "category": "Coffee Types",
+      "words": ["LATTE", "MOCHA", "ESPRESSO", "CAPPUCCINO"],
+      "difficulty": "green"
+    },
+    {
+      "category": "Things That Are Round",
+      "words": ["BALL", "WHEEL", "COIN", "PLATE"],
+      "difficulty": "blue"
+    },
+    {
+      "category": "Words That Can Follow 'Fire'",
+      "words": ["WORKS", "PLACE", "TRUCK", "ALARM"],
+      "difficulty": "purple"
+    }
+  ]
+}

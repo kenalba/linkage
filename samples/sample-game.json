@@ -1,0 +1,46 @@
+{
+  "title": "Daily Connections",
+  "instructions": "Find groups of four items that share something in common.",
+  "groups": [
+    {
+      "category": "Types of Pasta",
+      "words": [
+        "PENNE",
+        "RIGATONI",
+        "FUSILLI",
+        "SPAGHETTI"
+      ],
+      "difficulty": "yellow"
+    },
+    {
+      "category": "Things in a Toolbox",
+      "words": [
+        "HAMMER",
+        "WRENCH",
+        "SCREWDRIVER",
+        "PLIERS"
+      ],
+      "difficulty": "green"
+    },
+    {
+      "category": "Words That Can Precede 'Board'",
+      "words": [
+        "SURF",
+        "CLIP",
+        "SCORE",
+        "DASH"
+      ],
+      "difficulty": "blue"
+    },
+    {
+      "category": "Homophones of Numbers",
+      "words": [
+        "WON",
+        "TOO",
+        "FOR",
+        "ATE"
+      ],
+      "difficulty": "purple"
+    }
+  ]
+}

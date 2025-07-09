@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connections Puzzle Creator</title>
+    <link rel="stylesheet" href="puzzle-creator.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧩 Connections Puzzle Creator</h1>
+            <p>Create engaging Connections puzzles using guided wizard or JSON input</p>
+            
+            <div class="puzzle-guidelines">
+                <h3>✨ What Makes a Good Connections Puzzle?</h3>
+                <ul>
+                    <li><strong>Clear Categories:</strong> Each group should have an obvious connection when revealed</li>
+                    <li><strong>No Overlaps:</strong> Words should belong to only one category to avoid confusion</li>
+                    <li><strong>Balanced Difficulty:</strong> Yellow (obvious) → Green (medium) → Blue (tricky) → Purple (wordplay/obscure)</li>
+                    <li><strong>Red Herrings:</strong> Include words that could plausibly fit multiple categories</li>
+                    <li><strong>Consistent Length:</strong> Try to keep word lengths similar for better visual balance</li>
+                    <li><strong>Cultural Relevance:</strong> Use terms your audience will recognize and understand</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Step 1: Choose Mode -->
+            <div class="step active" id="step1">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Choose Creation Mode</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>How would you like to create your puzzle?</label>
+                    <div class="mode-selection">
+                        <div class="mode-option" onclick="selectMode('wizard')">
+                            <div class="mode-icon">🪄</div>
+                            <div class="mode-title">Wizard Mode</div>
+                            <div class="mode-description">Step-by-step guided creation with forms for each category</div>
+                        </div>
+                        <div class="mode-option" onclick="selectMode('json')">
+                            <div class="mode-icon">📝</div>
+                            <div class="mode-title">JSON Mode</div>
+                            <div class="mode-description">Paste JSON data directly or use Claude chat for custom topics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Puzzle Creation -->
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Create Your Puzzle</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="puzzleTitle">Puzzle Title:</label>
+                    <input 
+                        type="text" 
+                        id="puzzleTitle" 
+                        placeholder="e.g., 'Science Terms', 'Literature Quiz', 'Daily Connections'"
+                        value="Daily Connections"
+                    >
+                </div>
+
+                <div class="input-method-tabs">
+                    <button class="tab-btn active" onclick="switchInputMethod('wizard')">🪄 Wizard</button>
+                    <button class="tab-btn" onclick="switchInputMethod('json')">📝 JSON</button>
+                </div>
+
+                <div id="wizard-input" class="input-method active">
+                    <div id="manual-groups"></div>
+                    <div class="button-group">
+                        <button class="btn btn-success" onclick="createPuzzleFromManual()">Create Puzzle</button>
+                        <button class="btn btn-secondary" onclick="backToStep1()">Back</button>
+                    </div>
+                </div>
+
+                <div id="json-input" class="input-method">
+                    <div class="form-group">
+                        <label for="jsonData">Paste JSON Game Data:</label>
+                        <textarea 
+                            id="jsonData" 
+                            placeholder="Paste your JSON game data here..."
+                            style="min-height: 300px;"
+                        ></textarea>
+                        <div class="json-help">
+                            <button class="btn btn-secondary" onclick="downloadSampleJSON()">📥 Download Sample</button>
+                            <button class="btn btn-secondary" onclick="copySampleJSON()">📋 Copy to Clipboard</button>
+                            <span class="json-hint">Need the format? Download or copy the sample structure.</span>
+                        </div>
+                    </div>
+                    
+                    <div class="claude-instructions">
+                        <h4>💡 Pro Tip: Use Claude Chat for Custom Topics</h4>
+                        <ol>
+                            <li>Copy the sample JSON above using the "Copy to Clipboard" button</li>
+                            <li>Go to <a href="https://claude.ai" target="_blank">claude.ai</a> and start a new chat</li>
+                            <li>Paste the JSON and add: "Create a new Connections puzzle in this exact format about [YOUR TOPIC]"</li>
+                            <li>Attach files, links, or paste content about your topic for better results</li>
+                            <li>Copy Claude's response and paste it back here</li>
+                        </ol>
+                        <p class="claude-note">This method gives you more control over the puzzle theme and difficulty!</p>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-success" onclick="createPuzzleFromJSON()">Create Puzzle</button>
+                        <button class="btn btn-secondary" onclick="backToStep1()">Back</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Review and Edit -->
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Review & Edit Puzzle</div>
+                </div>
+
+                <div id="generationLoading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your puzzle...</p>
+                </div>
+
+                <div id="generationError" class="error" style="display: none;"></div>
+
+                <div id="puzzlePreview" class="puzzle-preview">
+                    <div id="puzzleGroups"></div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-success" onclick="downloadPuzzle()">Download HTML Game</button>
+                        <button class="btn btn-secondary" onclick="backToStep2()">Back</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="puzzle-creator.js"></script>
+</body>
+</html>
