@@ -314,7 +314,7 @@ class PuzzleCreator {
 
 
     createPuzzleFromManual() {
-        const title = document.getElementById('puzzleTitle').value.trim() || 'Connections Puzzle';
+        const title = document.getElementById('puzzleTitle').value.trim() || 'Linkages Puzzle';
         const groups = [];
         const difficulties = ['yellow', 'green', 'blue', 'purple'];
 
@@ -439,7 +439,7 @@ class PuzzleCreator {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'connections-sample.json';
+        a.download = 'linkages-sample.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -515,7 +515,7 @@ class PuzzleCreator {
     downloadPuzzle() {
         if (!this.generatedPuzzle) return;
 
-        const title = document.getElementById('puzzleTitle').value || 'Connections Puzzle';
+        const title = document.getElementById('puzzleTitle').value || 'Linkages Puzzle';
         const instructions = 'Find groups of four items that share something in common.';
         
         let html = this.gameTemplate;
@@ -530,7 +530,7 @@ class PuzzleCreator {
             .replace(/-+/g, '-')          // Replace multiple hyphens with single
             .replace(/^-|-$/g, '');       // Remove leading/trailing hyphens
         
-        if (!filename) filename = 'connections-puzzle';
+        if (!filename) filename = 'linkages-puzzle';
         if (!filename.endsWith('.html')) filename += '.html';
 
         const blob = new Blob([html], { type: 'text/html' });

@@ -1,6 +1,6 @@
-# Connections Game Clone
+# 🔗 Linkages
 
-A lightweight implementation of the NYT Connections game with both manual and AI-powered puzzle creation that generates standalone HTML files for mobile microlearning applications.
+A lightweight word connection puzzle game inspired by NYT Connections. Create engaging puzzles with both manual and AI-powered tools that generate standalone HTML files for mobile microlearning applications.
 
 ## 📁 Project Structure
 
@@ -27,7 +27,7 @@ A lightweight implementation of the NYT Connections game with both manual and AI
 
 ## 🎮 Features
 
-- **Complete Connections Game Logic**: 4x4 grid with category matching
+- **Complete Linkages Game Logic**: 4x4 grid with category matching (like NYT Connections)
 - **Mobile-Optimized Interface**: Responsive design with touch-friendly controls
 - **Dynamic Font Sizing**: Text automatically scales based on word length
 - **Difficulty Levels**: Color-coded difficulty (Yellow → Green → Blue → Purple)
@@ -88,7 +88,7 @@ The puzzle creator uses Claude AI for intelligent puzzle generation:
 
 ```json
 {
-  "title": "My Connections Game",
+  "title": "My Linkages Game",
   "instructions": "Find groups of four items that share something in common.",
   "groups": [
     {
@@ -124,7 +124,7 @@ The puzzle creator uses Claude AI for intelligent puzzle generation:
 
 ## 🎨 Game Rules
 
-Find groups of four items that share something in common. Each game has:
+Find groups of four items that share something in common (just like NYT Connections). Each game has:
 - 16 words arranged in a 4x4 grid
 - 4 categories with 4 words each
 - Color-coded difficulty levels (Yellow easiest, Purple hardest)
